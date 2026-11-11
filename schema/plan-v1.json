@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pacemade.app/schema/plan-v1.json",
+  "title": "Pacemade run plan",
+  "description": "A dated set of structured running workouts that Pacemade schedules to the Apple Watch with WorkoutKit.",
+  "type": "object",
+  "required": ["version", "name", "paceUnit", "workouts"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+    "paceUnit": {
+      "description": "Unit for every pace value in the file.",
+      "enum": ["min/mi", "min/km"]
+    },
+    "notes": { "type": "string" },
+    "workouts": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/workout" }
+    }
+  },
+  "$defs": {
+    "positiveNumber": { "type": "number", "exclusiveMinimum": 0 },
+
+    "pace": {
+      "description": "[slowest, fastest] as m:ss in the file's paceUnit. The first value must be slower (a larger time) than the second, or equal.",
+      "type": "array",
+      "prefixItems": [
+        { "type": "string", "pattern": "^[0-9]{1,2}:[0-5][0-9]$" },
+        { "type": "string", "pattern": "^[0-9]{1,2}:[0-5][0-9]$" }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+
+    "heartRate": {
+      "description": "[lowest, highest] in beats per minute.",
+      "type": "array",
+      "prefixItems": [
+        { "type": "integer", "minimum": 40, "maximum": 230 },
+        { "type": "integer", "minimum": 40, "maximum": 230 }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+
+    "goalFields": {
+      "description": "At most one goal. No goal means an open step that the runner ends manually.",
+      "type": "object",
+      "properties": {
+        "minutes": { "$ref": "#/$defs/positiveNumber" },
+        "seconds": { "$ref": "#/$defs/positiveNumber" },
+        "miles": { "$ref": "#/$defs/positiveNumber" },
+        "km": { "$ref": "#/$defs/positiveNumber" },
+        "meters": { "$ref": "#/$defs/positiveNumber" }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["minutes", "seconds"] },
+          { "required": ["minutes", "miles"] },
+          { "required": ["minutes", "km"] },
+          { "required": ["minutes", "meters"] },
+          { "required": ["seconds", "miles"] },
+          { "required": ["seconds", "km"] },
+          { "required": ["seconds", "meters"] },
+          { "required": ["miles", "km"] },
+          { "required": ["miles", "meters"] },
+          { "required": ["km", "meters"] }
+        ]
+      }
+    },
+
+    "alertFields": {
+      "description": "At most one target. Use pace or heartRate, not both.",
+      "type": "object",
+      "properties": {
+        "pace": { "$ref": "#/$defs/pace" },
+        "heartRate": { "$ref": "#/$defs/heartRate" }
+      },
+      "not": { "required": ["pace", "heartRate"] }
+    },
+
+    "bookendStep": {
+      "description": "A warm-up or cool-down.",
+      "allOf": [
+        { "$ref": "#/$defs/goalFields" },
+        { "$ref": "#/$defs/alertFields" }
+      ],
+      "unevaluatedProperties": false
+    },
+
+    "intervalStep": {
+      "allOf": [
+        { "$ref": "#/$defs/goalFields" },
+        { "$ref": "#/$defs/alertFields" },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": { "enum": ["work", "recovery"] }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+
+    "block": {
+      "type": "object",
+      "required": ["repeat", "steps"],
+      "additionalProperties": false,
+      "properties": {
+        "repeat": { "type": "integer", "minimum": 1, "maximum": 99 },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/intervalStep" }
+        }
+      }
+    },
+
+    "workout": {
+      "type": "object",
+      "required": ["date", "name", "activity", "location", "blocks"],
+      "additionalProperties": false,
+      "properties": {
+        "date": { "type": "string", "format": "date", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+        "name": {
+          "description": "Shown on the watch, so keep it short.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "activity": { "enum": ["running"] },
+        "location": { "enum": ["outdoor", "indoor"] },
+        "warmup": { "$ref": "#/$defs/bookendStep" },
+        "blocks": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/block" }
+        },
+        "cooldown": { "$ref": "#/$defs/bookendStep" },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}
