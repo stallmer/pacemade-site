@@ -10,6 +10,7 @@ support/index.html   Support and FAQ
 privacy/index.html   Privacy policy
 schema/plan-v1.json  The plan JSON Schema (copy of pacemade/schema/pacemade-plan.schema.json)
 assets/              Stylesheet, icons, app screenshots
+credits/             Open source credits (Phosphor Icons MIT notice for the app icon runner)
 CNAME                Custom domain for GitHub Pages
 404.html, robots.txt, sitemap.xml
 ```
